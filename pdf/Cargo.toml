@@ -36,6 +36,7 @@ once_cell = "0.2"
 log = "0.4.8"
 tempfile = { version = "3.1.0", optional = true }
 md5 = "0.6"
+png = "0.15"
 
 [lib]
 doctest = false

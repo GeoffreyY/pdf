@@ -344,6 +344,8 @@ pub struct ImageDict {
     // Alternates: Vec<AlternateImage>
 
     // SMask (soft mask): stream
+    #[pdf(key="SMask")]
+    pub soft_mask: Option<ImageXObject>,
     // SMaskInData: i32
     ///The integer key of the image’s entry in the structural parent tree
     #[pdf(key="StructParent")]

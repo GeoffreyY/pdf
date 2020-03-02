@@ -37,11 +37,44 @@ impl<I: Object + fmt::Debug> Stream<I> {
             Ok(data.into_owned())
         }).map(|v| v.as_slice())
     }
+}
 
+extern crate png;
+use png::{BitDepth, ColorType};
+
+pub enum ImageFormat {
+    Jpeg(Vec<u8>),
+    /// data, size, color type, bit depth
+    Png(Vec<u8>, (i32, i32), ColorType, BitDepth),
+}
+
+impl Stream<ImageDict> {
     /// If this is contains DCT encoded data, return the compressed data as is
-    pub fn as_jpeg(&self) -> Option<&[u8]> {
+    pub fn as_img(&self) -> Option<ImageFormat> {
         match self.info.filters.as_slice() {
-            &[StreamFilter::DCTDecode(_)] => Some(self.raw_data.as_slice()),
+            &[StreamFilter::DCTDecode(_)] => Some(ImageFormat::Jpeg(self.raw_data.clone())),
+            &[StreamFilter::FlateDecode(_)] => {
+                if let Some(stream) = &self.info.info.soft_mask {
+                    let data = self.data().unwrap();
+                    Some(ImageFormat::Png(
+                        data.chunks(3)
+                            .zip(stream.data().unwrap().clone())
+                            .map(|(rgb, a)| rgb.iter().map(|x| *x).chain(std::iter::once(*a)))
+                            .flatten()
+                            .collect(),
+                        (self.info.info.width, self.info.info.height),
+                        ColorType::RGBA,
+                        BitDepth::Eight,
+                    ))
+                } else {
+                    Some(ImageFormat::Png(
+                        self.data().unwrap().to_vec(),
+                        (self.info.info.width, self.info.info.height),
+                        ColorType::RGB,
+                        BitDepth::Eight,
+                    ))
+                }
+            }
             _ => None
         }
     }
